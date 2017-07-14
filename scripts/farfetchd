@@ -1,0 +1,20 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+#
+# This file is part of farfetchd, a CAPTCHA service
+#
+# :authors: Isis Lovecruft <isis@torproject.org>
+# :copyright: (c) 2017, Isis Agora Lovecruft
+#             (c) 2017, The Tor Project, Inc.
+# :license: 3-clause BSD, see included LICENSE for information
+
+from __future__ import print_function
+
+import os.path
+import sys
+
+from os import getcwd
+
+from farfetchd.server import main
+
+main(option)

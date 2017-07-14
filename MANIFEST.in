@@ -1,0 +1,2 @@
+include versioneer.py
+include farfetchd/_version.py
