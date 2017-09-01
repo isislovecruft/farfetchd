@@ -84,9 +84,24 @@ class CaptchaResource(resource.Resource):
         """
         return getClientIP(request, self.useForwardedHeader)
 
+    def formatResponse(self, data, request):
+        """Format a dictionary of ``data`` into JSON and add necessary response
+        headers.
+
+        This method will set the appropriate response headers:
+            * `Content-Type: application/vnd.api+json`
+
+        :type data: dict
+        :param data: Some data to respond with.  This will be formatted as JSON.
+        :returns: The encoded data.
+        """
+        rendered = json.dumps(data)
+        request.responseHeaders.addRawHeader(b"Content-Type", b"application/vnd.api+json")
+        return rendered
+
 
 class CaptchaFetchResource(CaptchaResource):
-    """A resource to retrieve a CAPTCHA challenge."""
+        """A resource to retrieve a CAPTCHA challenge."""
 
     isLeaf = True
     responseType = "fetch"
@@ -157,10 +172,7 @@ class CaptchaFetchResource(CaptchaResource):
             data["challenge"] = None
             data["error"] = "Could not construct or encode captcha!"
 
-        rendered = json.dumps(data)
-        request.responseHeaders.addRawHeader(b"Content-Type", b"application/json")
-
-        return rendered
+        return self.prepareResponse(data, request)
 
     def render_POST(self, request):
         data = {
@@ -170,7 +182,7 @@ class CaptchaFetchResource(CaptchaResource):
             "challenge": None,
             "error": "Requests to %s must be GET requests." % request.uri,
         }
-        return json.dumps(data)
+        return self.prepareResponse(data, request)
 
 
 class CaptchaCheckResource(CaptchaResource):
@@ -244,11 +256,7 @@ class CaptchaCheckResource(CaptchaResource):
             "result": None,
             "error": "Requests to %s must be POST requests." % request.uri,
         }
-
-        rendered = json.dumps(data)
-        request.responseHeaders.addRawHeader(b"Content-Type", b"application/json")
-
-        return rendered
+        return self.prepareResponse(data, request)
 
     def render_POST(self, request):
         """Process a client's CAPTCHA solution.
@@ -267,8 +275,6 @@ class CaptchaCheckResource(CaptchaResource):
         :returns: A rendered HTML page containing a ReCaptcha challenge image
             for the client to solve.
         """
-        request.response.addRawHeader(b"Content-Type", b"application/json")
-
         data = {
             "version": FARFETCHD_PROTOCOL_VERSION,
             "type": self.responseType,
@@ -286,8 +292,7 @@ class CaptchaCheckResource(CaptchaResource):
             log.msg("Client failed a CAPTCHA; returning redirect to /fetch")
             return redirectTo("/fetch", request)
 
-        rendered = json.dumps(data)
-        return rendered
+        return self.prepareResponse(data, request)
 
 
 def main():
