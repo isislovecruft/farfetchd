@@ -17,4 +17,4 @@ from os import getcwd
 
 from farfetchd.server import main
 
-main(option)
+main()
