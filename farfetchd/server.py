@@ -26,6 +26,7 @@ import crypto
 import captcha
 
 
+FARFETCHD_PROTOCOL_VERSION = 1
 FARFETCHD_HTTP_HOST = '127.0.0.1'
 FARFETCHD_HTTP_PORT = 3888
 FARFETCHD_CAPTCHA_HMAC_KEYFILE = 'farfetchd-key-hmac'
@@ -128,7 +129,8 @@ class CaptchaFetchResource(CaptchaResource):
         :type request: :api:`twisted.web.http.Request`
         :param request: A ``Request`` object for a CAPTCHA.
         :rtype: str
-        :returns: A JSON blob containing three fields:
+        :returns: A JSON blob containing the following fields:
+             * "version": The Farfetchd protocol version.
              * "image": A base64-encoded CAPTCHA JPEG image.
              * "challenge": A base64-encoded, encrypted challenge.  The client
                will need to hold on to the and pass it back later, along with
@@ -138,7 +140,9 @@ class CaptchaFetchResource(CaptchaResource):
         """
         image, challenge = self.getCaptchaImage(request)
 
-        data = {}
+        data = {
+            "version": FARFETCHD_PROTOCOL_VERSION,
+        }
 
         try:
             data["image"] = base64.b64encode(image)
@@ -156,6 +160,7 @@ class CaptchaFetchResource(CaptchaResource):
 
     def render_POST(self, request):
         data = {
+            "version": FARFETCHD_PROTOCOL_VERSION,
             "image": None,
             "challenge": None,
             "error": "Requests to %s must be GET requests." % request.uri,
@@ -228,6 +233,7 @@ class CaptchaCheckResource(CaptchaResource):
 
     def render_GET(self, request):
         data = {
+            "version": FARFETCHD_PROTOCOL_VERSION,
             "result": None,
             "error": "Requests to %s must be POST requests." % request.uri,
         }
@@ -257,6 +263,7 @@ class CaptchaCheckResource(CaptchaResource):
         request.response.addRawHeader(b"Content-Type", b"application/json")
 
         data = {
+            "version": FARFETCHD_PROTOCOL_VERSION,
             "result": False,
             "error": None,
         }
