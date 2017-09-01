@@ -62,6 +62,8 @@ def getClientIP(request, useForwardedHeader=False):
 class CaptchaResource(resource.Resource):
     """A CAPTCHA."""
 
+    responseType = ""
+
     def __init__(self, hmacKey=None, publicKey=None, secretKey=None,
                  useForwardedHeader=False):
         resource.Resource.__init__(self)
@@ -87,6 +89,7 @@ class CaptchaFetchResource(CaptchaResource):
     """A resource to retrieve a CAPTCHA challenge."""
 
     isLeaf = True
+    responseType = "fetch"
 
     def __init__(self, hmacKey=None, publicKey=None, secretKey=None,
                  captchaDir="captchas", useForwardedHeader=False):
@@ -142,6 +145,7 @@ class CaptchaFetchResource(CaptchaResource):
 
         data = {
             "version": FARFETCHD_PROTOCOL_VERSION,
+            "type": self.responseType,
         }
 
         try:
@@ -161,6 +165,7 @@ class CaptchaFetchResource(CaptchaResource):
     def render_POST(self, request):
         data = {
             "version": FARFETCHD_PROTOCOL_VERSION,
+            "type": self.responseType,
             "image": None,
             "challenge": None,
             "error": "Requests to %s must be GET requests." % request.uri,
@@ -172,6 +177,7 @@ class CaptchaCheckResource(CaptchaResource):
     """A resource to verify a CAPTCHA solution."""
 
     isLeaf = True
+    responseType = "check"
 
     def __init__(self, hmacKey=None, publicKey=None, secretKey=None,
                  useForwardedHeader=False):
@@ -234,6 +240,7 @@ class CaptchaCheckResource(CaptchaResource):
     def render_GET(self, request):
         data = {
             "version": FARFETCHD_PROTOCOL_VERSION,
+            "type": self.responseType,
             "result": None,
             "error": "Requests to %s must be POST requests." % request.uri,
         }
@@ -264,6 +271,7 @@ class CaptchaCheckResource(CaptchaResource):
 
         data = {
             "version": FARFETCHD_PROTOCOL_VERSION,
+            "type": self.responseType,
             "result": False,
             "error": None,
         }
