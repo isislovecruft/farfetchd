@@ -14,12 +14,15 @@
 """An HTTP server for serving CAPTCHAs."""
 
 import base64
+import copy
 import json
 import sys
+import os.path
 
-from twisted.python import log
+from twisted.python import failure, log
+from twisted.python.compat import intToBytes
 from twisted.internet import reactor
-from twisted.web import server, resource
+from twisted.web import http, server, resource
 from twisted.web.util import redirectTo
 
 import crypto
@@ -99,9 +102,17 @@ class CaptchaResource(resource.Resource):
         request.responseHeaders.addRawHeader(b"Content-Type", b"application/vnd.api+json")
         return rendered
 
+    def render(self, request):
+        log.msg("render GET for root resource")
+        request.responseHeaders.setRawHeaders(b"Content-Type", ["text/html"])
+        return b"""<html><body>
+            <h1>How To Speak To This Server</h1>
+            <p>XXX fill me in with instructions
+            </body></html>"""
+
 
 class CaptchaFetchResource(CaptchaResource):
-        """A resource to retrieve a CAPTCHA challenge."""
+    """A resource to retrieve a CAPTCHA challenge."""
 
     isLeaf = True
     responseType = "fetch"
@@ -295,6 +306,201 @@ class CaptchaCheckResource(CaptchaResource):
         return self.prepareResponse(data, request)
 
 
+#class FarfetchdRequestHandler(http.Request):
+class FarfetchdRequestHandler(server.Request):
+    """Handler for dispatching Farfetchd-specific requests."""
+
+    #: The root resource, optionally with children
+    resource = None
+
+    def __init__(self, *args, **kwargs):
+        http.Request.__init__(self, *args, **kwargs)
+
+    def checkRequestHeaders(self):
+        """The JSON API specification requires servers to respond with certain HTTP
+        status codes and message if the client's request headers are inappropriate in
+        any of the following ways:
+
+        * Servers MUST respond with a 415 Unsupported Media Type status code if
+          a request specifies the header Content-Type: application/vnd.api+json
+          with any media type parameters.
+
+        * Servers MUST respond with a 406 Not Acceptable status code if a
+          request’s Accept header contains the JSON API media type and all
+          instances of that media type are modified with media type parameters.
+        """
+        supports_json_api = False
+
+        if self.requestHeaders.hasHeader("Content-Type"):
+            for header in self.requestHeaders.getHeader("Content-Type"):
+                # The request must have the Content-Type set to 'application/vnd.api+json':
+                if header is 'application/vnd.api+json':
+                    supports_json_api = True
+                # The request must not specify a Content-Type with media parameters:
+                if ';' in header:
+                    supports_json_api = False
+
+        if not supports_json_api:
+            self.setResponseCode(http.UNSUPPORTED_MEDIA_TYPE)
+            self.write(b"")
+            return
+
+        # If the request has an Accept header which contains
+        # 'application/vnd.api+json' then at least one instance of that type
+        # must have no parameters:
+        if self.requestHeaders.hasHeader("Accept"):
+            compatible_accept_header = False
+            for header in self.requestHeaders.getHeader("Accept"):
+                if header is 'application/vnd.api+json':
+                    compatible_accept_header = True
+            if not compatible_accept_header:
+                self.setResponseCode(http.NOT_ACCEPTABLE)
+                self.write(b"")
+                return
+
+    def process(self):
+        """Process an incoming request to the Farfetchd server."""
+        # Get site from channel
+        self.site = self.channel.site
+
+        # Set various default headers
+        self.setHeader(b"Content-Type", b"application/vnd.api+json")
+        self.setHeader(b"Server", "Farfetchd v%d" % FARFETCHD_PROTOCOL_VERSION)
+        self.setHeader(b"Date", http.datetimeToString())
+
+        # Resource Identification
+        self.prepath = []
+        self.postpath = list(map(http.unquote, self.path[1:].split(b'/')))
+
+        log.msg("postpath is %s" % self.postpath)
+        log.msg("self.resource is %s" % self.resource)
+
+        #requested_resource = self.resource.getChildForRequest(self)
+        requested_resource = resource.getChildForRequest(self.resource, self)
+
+        try:
+            requested_resource = self.site.getResourceFor(self)
+            #self.render(requested_resource)
+            log.msg("Requested resource is %s" % requested_resource)
+            log.msg("Requested resource entities are %s" % requested_resource.listEntities())
+            if requested_resource:
+                if requested_resource.responseType:
+                    log.msg("Request will be handled by %r" % requested_resource.__class__.__name__)
+                    self.checkRequestHeaders()
+                #requested_resource.render(self)
+                self.render(requested_resource)
+            else:
+                self.setResponseCode(http.NOT_FOUND)
+                self.write(b"No such resource")
+        except:
+            self.processingFailed(failure.Failure())
+
+        if not self.finished:
+            self.finish()
+
+    def processingFailed(self, reason):
+        log.err(reason)
+
+        body = (b"<html><head><title>Processing Failed</title></head><body>"
+                b"<b>Processing Failed</b></body></html>")
+
+        self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+        self.setHeader(b'content-type', b"text/html")
+        self.setHeader(b'content-length', intToBytes(len(body)))
+        self.write(body)
+        self.finish()
+        return reason
+
+
+class HttpJsonApi(http.HTTPChannel):
+    """An HTTP API that responds to requests with HTTP status codes required by the
+    JSON API specification.
+    """
+    requestFactory = FarfetchdRequestHandler
+
+
+class HttpJsonApiFactory(http.HTTPFactory):
+    """Factory for generating `HttpJsonApi`s."""
+
+    _protocol = HttpJsonApi
+
+    def buildProtocol(self, addr):
+        protocol = self._protocol()
+        protocol.timeout = self.timeOut
+        return protocol
+
+
+class HttpJsonApiServer(HttpJsonApiFactory):
+    """A web application which speaks JSON API over HTTP.
+
+    :ivar factory: A factory for the protocol we speak.
+    :ivar requestFactory: factory creating requests objects. Default to
+        Request}.
+    :ivar displayTracebacks: if set, Twisted internal errors are displayed on
+        rendered pages. Default to `True`
+    """
+    factory = HttpJsonApiFactory
+    requestFactory = HttpJsonApiFactory._protocol.requestFactory
+    displayTracebacks = True
+
+    def __init__(self, resource, *args, **kwargs):
+        """
+        :param resource: The root of the resource hierarchy.  All request
+            traversal for requests received by this factory will begin at this
+            resource.
+        :type resource: `IResource` provider
+
+        :see: `twisted.web.http.HTTPFactory.__init__`
+        """
+        self.factory.__init__(self, *args, **kwargs)
+        self.resource = resource
+        self.requestFactory.resource = resource
+
+    def buildProtocol(self, addr):
+        """Generate an HTTP channel attached to this site."""
+        channel = self.factory.buildProtocol(self, addr)
+        channel.requestFactory = self.requestFactory
+        channel.site = self
+        return channel
+
+    ###########################################################################
+    # The remainder of the server implementation implements emulating         #
+    # behaving like the root resource of the server, and passing through      #
+    # requests to their responsible handlers.                                 #
+    ###########################################################################
+
+    isLeaf = False
+
+    def render(self, request):
+        """Redirect because a server represents merely the root URL."""
+        request.redirect(request.prePathURL() + b'/')
+        request.finish()
+
+    def getChildWithDefault(self, pathEl, request):
+        """Emulate a resource's getChild() method."""
+        request.site = self
+        log.msg("server.resource is %s" % self.resource)
+        return self.resource.getChildWithDefault(pathEl, request)
+
+    # XXXX problem is likely here
+    def getResourceFor(self, request):
+        """Get a resource for a request.
+
+        This iterates through the resource heirarchy, calling
+        getChildWithDefault on each resource it finds for a path element,
+        stopping when it hits an element where isLeaf is true.
+        """
+        log.msg("Request for resource at %s" % request.path)
+
+        request.site = self
+        # Sitepath is used to determine cookie names between distributed
+        # servers and disconnected sites.
+        request.sitepath = copy.copy(request.prepath)
+        child = resource.getChildForRequest(self.resource, request)
+        log.msg(child)
+        return child
+
+
 def main():
     log.startLogging(sys.stdout)
 
@@ -304,14 +510,16 @@ def main():
     # Load or create our encryption keys:
     secretKey, publicKey = crypto.getRSAKey(FARFETCHD_CAPTCHA_RSA_KEYFILE)
 
+    index = CaptchaResource()
+    #index = resource.Resource()
     fetch = CaptchaFetchResource(hmacKey, publicKey, secretKey)
     check = CaptchaCheckResource(hmacKey, publicKey, secretKey)
 
-    root = CaptchaResource()
+    root = index
     root.putChild("fetch", fetch)
     root.putChild("check", check)
 
-    site = server.Site(root)
+    site = HttpJsonApiServer(root)
     port = FARFETCHD_HTTP_PORT or 80
     host = FARFETCHD_HTTP_HOST or '127.0.0.1'
 
