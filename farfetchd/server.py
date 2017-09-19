@@ -127,7 +127,7 @@ class CaptchaFetchResource(CaptchaResource):
     responseType = "fetch"
 
     def __init__(self, hmacKey=None, publicKey=None, secretKey=None,
-                 captchaDir="captchas", useForwardedHeader=False):
+                 captchaDir="captchas", useForwardedHeader=True):
         CaptchaResource.__init__(self, hmacKey, publicKey, secretKey,
                                  useForwardedHeader)
         self.captchaDir = captchaDir
