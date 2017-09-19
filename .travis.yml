@@ -51,9 +51,13 @@ matrix:
       env: TWISTED_VERSION=16.6.0 PYOPENSSL_VERSION=16.2.0
   allow_failures:
     - python: "2.7"
+    - env: TWISTED_VERSION=16.1.1 PYOPENSSL_VERSION=16.2.0
+    - python: "2.7"
       env: TWISTED_VERSION=16.6.0 PYOPENSSL_VERSION=16.2.0
     - python: "2.7"
       env: TWISTED_VERSION=17.1.0 PYOPENSSL_VERSION=16.2.0
+    - python: "pypy"
+      env: TWISTED_VERSION=14.0.2 PYOPENSSL_VERSION=0.14
     - python: "pypy"
       env: TWISTED_VERSION=16.1.1 PYOPENSSL_VERSION=16.2.0
     - python: "pypy"
