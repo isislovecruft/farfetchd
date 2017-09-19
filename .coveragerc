@@ -1,0 +1,28 @@
+[run]
+source = farfetchd
+branch = True
+#parallel = True
+timid = False
+
+[report]
+omit = 
+     */_version*
+     */__init__*
+# Regexes for lines to exclude from report generation:
+exclude_lines = 
+     pragma: no cover
+     # don't complain if the code doesn't hit unimplemented sections:
+     raise NotImplementedError
+     pass
+     # don't complain if non-runnable or debuging code isn't run:
+     if 0:
+     if False:
+     def __repr__
+     if __name__ == .__main__.:
+# Ignore source code which cannot be found:
+ignore_errors = True
+# Exit with status code 2 if under this percentage is covered:
+fail_under = 50
+
+[html]
+directory = doc/coverage-html
