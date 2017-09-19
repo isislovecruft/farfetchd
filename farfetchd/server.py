@@ -154,10 +154,10 @@ class CaptchaFetchResource(CaptchaResource):
         try:
             capt.get()
         except captcha.GimpCaptchaError as error:
-            log.error(error)
+            log.msg(error)
         except Exception as error:  # pragma: no cover
-            log.error("Unhandled error while retrieving Gimp captcha!")
-            log.error(error)
+            log.err("Unhandled error while retrieving Gimp captcha!")
+            log.err(error)
 
         return (capt.image, capt.challenge)
 
