@@ -1,3 +1,4 @@
 include versioneer.py
 include farfetchd/_version.py
 include farfetchd/API.html
+exclude farfetchd/test
