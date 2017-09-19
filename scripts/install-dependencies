@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -x --
+
+SUDO=
+APT_GET=$(which apt-get)
+APT_FLAGS='-q --no-install-suggests --no-install-recommends'
+PIP=$(which pip)
+PIP_FLAGS=
+
+# If this doesn't work, then the version of pip is very old and we need to use --no-use-wheel
+$PIP --no-binaries :all:
+
+if test "$?" -eq 2 ; then
+    PIP_FLAGS=$PIP_FLAGS' --no-use-wheel'
+else
+    PIP_FLAGS=$PIP_FLAGS' --no-binaries :all:'
+fi
+
+DEPENDS="build-essential openssl python-dev python-setuptools"
+HERE=$(dirname $0)
+
+if [ "$EUID" != "0" ] ; then SUDO=$(which sudo); fi
+# pip is pre-installed on Travis-CI machines in their Python environment, so
+# we should avoid reinstalling it (as that might do odd things to the
+# virtualenv that we're already inside):
+if [ "$TRAVIS" == "true" ] ; then
+    DEPENDS="${DEPENDS} realpath"
+else
+    DEPENDS="${DEPENDS} python-pip flog"
+fi
+    
+MISSING=""
+for dep in $DEPENDS ; do
+    if ! test "$(dpkg -l $dep | grep \"ii  $dep\")" ; then
+        MISSING="${MISSING} $dep"
+    fi
+done
+
+$SUDO $APT_GET install ${APT_FLAGS} ${MISSING}
+
+# When running on Travis, be sure that environment variables are passed from
+# .travis.yml to this script:
+if [ "$TRAVIS" == "true" ] ; then
+    $PIP install $PIP_FLAGS -r "$HERE/../.travis.requirements.txt"
+    $PIP install $PIP_FLAGS "Twisted==$TWISTED_VERSION" "pyOpenSSL==$PYOPENSSL_VERSION"
+else
+    $PIP install $PIP_FLAGS -r "$HERE/../requirements.txt"
+fi

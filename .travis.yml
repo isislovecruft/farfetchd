@@ -1,0 +1,79 @@
+language: python
+
+notifications:
+  irc:
+    channels:
+      - "irc.oftc.net#tor-ci"
+    template:
+      - "%{repository}#%{build_number} (%{branch} - %{commit} : %{author}): %{message}"
+      - "Build details : %{build_url}"
+    on_success: always
+    on_failure: always
+  email:
+    on_success: never
+    on_failure: never
+
+python:
+  - "2.7"
+#  - "3.5"
+
+addons:
+  hosts:
+    - captchas.torproject.org
+
+env:
+  global:
+    # Fixes Travis-CI issue #1748, which was causing non-deterministic CI test failures,
+    # particularly in the lib/bridgedb/test/test_https.py integration tests which use
+    # the Python mechanize module to test the HTTPS server.
+    # See https://github.com/travis-ci/travis-ci/issues/1748
+    #     https://travis-ci.org/isislovecruft/bridgedb/jobs/50169439#L1763
+    #     https://stackoverflow.com/questions/2192323/what-is-the-python-egg-cache-python-egg-cache
+    #     https://github.com/pypa/virtualenv/issues/459
+    - PYTHON_EGG_CACHE="${HOME}/.python-eggs-$(echo $RANDOM$PPID$RANDOM | sha256sum | cut -d ' ' -f 1)"
+  matrix:
+    # What we're developing with
+    - TWISTED_VERSION=14.0.2 PYOPENSSL_VERSION=0.14
+    # What we're running on polyanthum
+    - TWISTED_VERSION=16.1.1 PYOPENSSL_VERSION=16.2.0
+    # Debian Stretch
+    - TWISTED_VERSION=16.6.0 PYOPENSSL_VERSION=16.2.0
+    # Debian experimental (all other versions of Debian have the same dependency versions right now)
+    - TWISTED_VERSION=17.1.0 PYOPENSSL_VERSION=16.2.0
+
+matrix:
+  include:
+    - python: "pypy"
+      env: TWISTED_VERSION=14.0.2 PYOPENSSL_VERSION=0.14
+    - python: "pypy"
+      env: TWISTED_VERSION=16.1.1 PYOPENSSL_VERSION=16.2.0
+    - python: "pypy"
+      env: TWISTED_VERSION=16.6.0 PYOPENSSL_VERSION=16.2.0
+  allow_failures:
+    - python: "2.7"
+      env: TWISTED_VERSION=16.6.0 PYOPENSSL_VERSION=16.2.0
+    - python: "2.7"
+      env: TWISTED_VERSION=17.1.0 PYOPENSSL_VERSION=16.2.0
+    - python: "pypy"
+      env: TWISTED_VERSION=16.1.1 PYOPENSSL_VERSION=16.2.0
+    - python: "pypy"
+      env: TWISTED_VERSION=16.6.0 PYOPENSSL_VERSION=16.2.0
+  fast_finish: true
+
+before_install:
+  - sudo apt-get update
+  - mkdir $PYTHON_EGG_CACHE
+  - chmod -R og-w $PYTHON_EGG_CACHE
+
+install:
+  - TWISTED_VERSION=$TWISTED_VERSION PYOPENSSL_VERSION=$PYOPENSSL_VERSION ./scripts/install-dependencies
+  - make install
+
+before_script:
+  - farfetchd &
+
+script:
+  - make coverage-test
+
+after_success:
+  - coveralls --rcfile=".coveragerc"

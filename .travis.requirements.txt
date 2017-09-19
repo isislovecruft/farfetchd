@@ -1,0 +1,19 @@
+# This is a pip requirements.txt file for running farfetchd and farfetchd's test
+# suites on Travis CI infrastructure. See https://travis-ci.org/ and the
+# .travis.yml file for more info.
+#
+# Please note that there may be additional dependencies not listed here but
+# specified with their version numbers in .travis.yml in order to submit test
+# runs which use multiple different dependency versions.
+#------------------------------------------------------------------------------
+#
+# To run install these dependencies and run the tests, do:
+#
+#     $ pip install -r .test.requirements.txt
+#     $ make coverage
+#
+#------------------------------------------------------------------------------
+coverage==4.2
+coveralls==0.4.2
+ipaddr==2.1.11
+pycrypto==2.6.1
