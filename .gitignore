@@ -30,6 +30,7 @@ installed-files.txt
 *.prof
 nosetests.xml
 doc/coverage-html/*
+_trial_temp/*
 
 # Translations
 *.mo
