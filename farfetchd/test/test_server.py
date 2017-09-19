@@ -27,7 +27,7 @@ from twisted.web.test import requesthelper
 from farfetchd import server
 from farfetchd import crypto
 
-from farfetchd.test.https_helpers import DummyRequest
+from farfetchd.test.http_helpers import DummyRequest
 
 
 # For additional logger output for debugging, comment out the following:
@@ -37,7 +37,7 @@ logging.disable(50)
 
 
 class GetClientIPTests(unittest.TestCase):
-    """Tests for :func:`bridgedb.https.server.getClientIP`."""
+    """Tests for :func:`farfetchd.server.getClientIP`."""
 
     def createRequestWithIPs(self):
         """Set the IP address returned from ``request.getClientIP()`` to
@@ -79,7 +79,7 @@ class GetClientIPTests(unittest.TestCase):
 
 
 class IndexResourceTests(unittest.TestCase):
-    """Test for :class:`bridgedb.https.server.IndexResource`."""
+    """Test for :class:`farfetchd.server.IndexResource`."""
 
     def setUp(self):
         self.pagename = ''
@@ -99,8 +99,7 @@ class CaptchaFetchResourceTests(unittest.TestCase):
     """Tests for :mod:`farfetchd.server.CaptchaFetchResource`."""
 
     def setUp(self):
-        """Create a :class:`CaptchaFetchResource`.
-        """
+        """Create a :class:`CaptchaFetchResource`."""
         secretKey, publicKey = crypto.getRSAKey('captcha.key', bits=1024)
 
         # Set up our resources to fake a minimal HTTP(S) server:
