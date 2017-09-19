@@ -56,7 +56,5 @@ _trial_temp/*
 TAGS
 
 # Farfetchd specific stuff
-captchas*
 farfetchd-key-hmac*
 farfetchd-key-rsa*
-
