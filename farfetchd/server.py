@@ -28,6 +28,7 @@ from twisted.web.util import redirectTo
 import crypto
 import captcha
 
+from util import isIPAddress
 
 
 FARFETCHD_API_VERSION = "0.0.1"
@@ -178,31 +179,23 @@ class CaptchaFetchResource(CaptchaResource):
         """
         image, challenge = self.getCaptchaImage(request)
 
-        data = {
-            "version": FARFETCHD_API_VERSION,
-            "type": self.responseType,
+        json = {
+            'data': {
+                'id': 1,
+                'type': self.responseType,
+                'version': FARFETCHD_API_VERSION,
+                'image': image,
+                'challenge': challenge, # The challenge is already base64-encoded
+            }
         }
 
         try:
-            data["image"] = base64.b64encode(image)
-            data["challenge"] = challenge, # The challenge is already base64-encoded.
-            data["error"] = None
+            json["data"]["image"] = base64.b64encode(image)
         except Exception as err:
-            data["image"] = None
-            data["challenge"] = None
-            data["error"] = "Could not construct or encode captcha!"
+            log.err("Could not construct or encode captcha!")
+            log.err(err)
 
-        return self.prepareResponse(data, request)
-
-    def render_POST(self, request):
-        data = {
-            "version": FARFETCHD_PROTOCOL_VERSION,
-            "type": self.responseType,
-            "image": None,
-            "challenge": None,
-            "error": "Requests to %s must be GET requests." % request.uri,
-        }
-        return self.prepareResponse(data, request)
+        return self.formatResponse(json, request)
 
 
 class CaptchaCheckResource(CaptchaResource):
@@ -230,15 +223,36 @@ class CaptchaCheckResource(CaptchaResource):
             client's CAPTCHA solution from the text input area, and the second
             is the challenge string.
         """
-        try:
-            encoded_data = request.args['data'][0]
-            data = json.loads(encoded_data)
-            challenge = data["challenge"]
-            response = data["response"]
-        except Exception:  # pragma: no cover
-            return redirectTo(request.URLPath(), request)
+        challenge, solution = None, None
 
-        return (challenge, response)
+        try:
+            encoded_data = request.content.read()
+            data = json.loads(encoded_data)["data"]
+
+            if data["type"] != self.responseType:
+                raise ValueError(
+                    "Bad JSON API object type: expected %s got %s" %
+                    (self.responseType, data["type"]))
+            elif data["id"] != 2:
+                raise ValueError(
+                    "Bad JSON API data id: expected 2 got %s" %
+                    (data["id"]))
+            elif data["version"] != FARFETCHD_API_VERSION:
+                raise ValueError(
+                    "Client requested protocol version %s, but we're using %s" %
+                    (data["version"], FARFETCHD_API_VERSION))
+            else:
+                challenge = data["challenge"]
+                solution = data["solution"]
+        except (ValueError, KeyError) as err:
+            log.msg("Error processing client POST request: %s" % err.message)
+        except AssertionError as err:
+            print(err)
+            log.msg("Mismatched field in client json: %s" % err.message)
+        except Exception as err:
+            log.err(err)
+
+        return (challenge, solution)
 
     def checkSolution(self, request):
         """Process a solved CAPTCHA via
@@ -254,7 +268,13 @@ class CaptchaCheckResource(CaptchaResource):
         :returns: True, if the CAPTCHA solution was valid; False otherwise.
         """
         valid = False
-        challenge, solution = self.extractClientSolution(request)
+
+        try:
+            challenge, solution = self.extractClientSolution(request)
+        except Exception as err:
+            log.err(err)
+            return self.failureResponse(request)
+
         clientIP = self.getClientIP(request)
         clientHMACKey = crypto.getHMAC(self.hmacKey, clientIP)
 
@@ -269,14 +289,11 @@ class CaptchaCheckResource(CaptchaResource):
                 % ("C" if valid else "Inc", clientIP, solution))
         return valid
 
-    def render_GET(self, request):
-        data = {
-            "version": FARFETCHD_PROTOCOL_VERSION,
-            "type": self.responseType,
-            "result": None,
-            "error": "Requests to %s must be POST requests." % request.uri,
-        }
-        return self.prepareResponse(data, request)
+    def failureResponse(self, request):
+        """Respond with HTTP status code "419 No You're A Teapot"."""
+        data = self.formatResponse(b'', request)
+        request.setResponseCode(419, "No You're A Teapot")
+        return data
 
     def render_POST(self, request):
         """Process a client's CAPTCHA solution.
@@ -296,23 +313,22 @@ class CaptchaCheckResource(CaptchaResource):
             for the client to solve.
         """
         data = {
-            "version": FARFETCHD_PROTOCOL_VERSION,
-            "type": self.responseType,
-            "result": False,
-            "error": None,
+            "data": {
+                "id": 3,
+                "type": self.responseType,
+                "version": FARFETCHD_API_VERSION,
+                "result": False,
+            }
         }
 
-        if self.checkSolution(request) is True:
-            try:
-                data["result"] = True
-            except Exception as err:
-                data["result"] = False
-                data["error"] = bytes(err.message)
-        else:
-            log.msg("Client failed a CAPTCHA; returning redirect to /fetch")
-            return redirectTo("/fetch", request)
-
-        return self.prepareResponse(data, request)
+        try:
+            if self.checkSolution(request) is True:
+                data["data"]["result"] = True
+                return self.formatResponse(data, request)
+            else:
+                return self.failureResponse(request)
+        except Exception as err:
+            log.err(err)
 
 
 #class FarfetchdRequestHandler(http.Request):
@@ -520,7 +536,6 @@ def main():
     secretKey, publicKey = crypto.getRSAKey(FARFETCHD_CAPTCHA_RSA_KEYFILE)
 
     index = CaptchaResource()
-    #index = resource.Resource()
     fetch = CaptchaFetchResource(hmacKey, publicKey, secretKey)
     check = CaptchaCheckResource(hmacKey, publicKey, secretKey)
 
