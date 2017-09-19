@@ -29,7 +29,8 @@ import crypto
 import captcha
 
 
-FARFETCHD_PROTOCOL_VERSION = 1
+
+FARFETCHD_API_VERSION = "0.0.1"
 FARFETCHD_HTTP_HOST = '127.0.0.1'
 FARFETCHD_HTTP_PORT = 3888
 FARFETCHD_CAPTCHA_HMAC_KEYFILE = 'farfetchd-key-hmac'
@@ -178,7 +179,7 @@ class CaptchaFetchResource(CaptchaResource):
         image, challenge = self.getCaptchaImage(request)
 
         data = {
-            "version": FARFETCHD_PROTOCOL_VERSION,
+            "version": FARFETCHD_API_VERSION,
             "type": self.responseType,
         }
 
@@ -373,7 +374,7 @@ class FarfetchdRequestHandler(server.Request):
 
         # Set various default headers
         self.setHeader(b"Content-Type", b"application/vnd.api+json")
-        self.setHeader(b"Server", "Farfetchd v%d" % FARFETCHD_PROTOCOL_VERSION)
+        self.setHeader(b"Server", "Farfetchd v%s" % FARFETCHD_API_VERSION)
         self.setHeader(b"Date", http.datetimeToString())
 
         # Resource Identification
