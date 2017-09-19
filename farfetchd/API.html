@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.14: http://docutils.sourceforge.net/" />
+<title>farfetchd API Specification</title>
+<style type="text/css">
+
+.highlight .hll { background-color: #ffffcc }
+.highlight  { background: #ffffff; }
+.highlight .c { color: #888888; font-style: italic } /* Comment */
+.highlight .err { background-color: #a848a8 } /* Error */
+.highlight .k { color: #2838b0 } /* Keyword */
+.highlight .o { color: #666666 } /* Operator */
+.highlight .p { color: #888888 } /* Punctuation */
+.highlight .ch { color: #287088; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #888888; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #289870 } /* Comment.Preproc */
+.highlight .cpf { color: #888888; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #888888; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #888888; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #c02828 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .gr { color: #c02828 } /* Generic.Error */
+.highlight .gh { color: #666666 } /* Generic.Heading */
+.highlight .gi { color: #388038 } /* Generic.Inserted */
+.highlight .go { color: #666666 } /* Generic.Output */
+.highlight .gp { color: #444444 } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #444444 } /* Generic.Subheading */
+.highlight .gt { color: #2838b0 } /* Generic.Traceback */
+.highlight .kc { color: #444444; font-style: italic } /* Keyword.Constant */
+.highlight .kd { color: #2838b0; font-style: italic } /* Keyword.Declaration */
+.highlight .kn { color: #2838b0 } /* Keyword.Namespace */
+.highlight .kp { color: #2838b0 } /* Keyword.Pseudo */
+.highlight .kr { color: #2838b0 } /* Keyword.Reserved */
+.highlight .kt { color: #2838b0; font-style: italic } /* Keyword.Type */
+.highlight .m { color: #444444 } /* Literal.Number */
+.highlight .s { color: #b83838 } /* Literal.String */
+.highlight .na { color: #388038 } /* Name.Attribute */
+.highlight .nb { color: #388038 } /* Name.Builtin */
+.highlight .nc { color: #287088 } /* Name.Class */
+.highlight .no { color: #b85820 } /* Name.Constant */
+.highlight .nd { color: #287088 } /* Name.Decorator */
+.highlight .ni { color: #709030 } /* Name.Entity */
+.highlight .ne { color: #908828 } /* Name.Exception */
+.highlight .nf { color: #785840 } /* Name.Function */
+.highlight .nl { color: #289870 } /* Name.Label */
+.highlight .nn { color: #289870 } /* Name.Namespace */
+.highlight .nt { color: #2838b0 } /* Name.Tag */
+.highlight .nv { color: #b04040 } /* Name.Variable */
+.highlight .ow { color: #a848a8 } /* Operator.Word */
+.highlight .w { color: #a89028 } /* Text.Whitespace */
+.highlight .mb { color: #444444 } /* Literal.Number.Bin */
+.highlight .mf { color: #444444 } /* Literal.Number.Float */
+.highlight .mh { color: #444444 } /* Literal.Number.Hex */
+.highlight .mi { color: #444444 } /* Literal.Number.Integer */
+.highlight .mo { color: #444444 } /* Literal.Number.Oct */
+.highlight .sa { color: #444444 } /* Literal.String.Affix */
+.highlight .sb { color: #b83838 } /* Literal.String.Backtick */
+.highlight .sc { color: #a848a8 } /* Literal.String.Char */
+.highlight .dl { color: #b85820 } /* Literal.String.Delimiter */
+.highlight .sd { color: #b85820; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #b83838 } /* Literal.String.Double */
+.highlight .se { color: #709030 } /* Literal.String.Escape */
+.highlight .sh { color: #b83838 } /* Literal.String.Heredoc */
+.highlight .si { color: #b83838; text-decoration: underline } /* Literal.String.Interpol */
+.highlight .sx { color: #a848a8 } /* Literal.String.Other */
+.highlight .sr { color: #a848a8 } /* Literal.String.Regex */
+.highlight .s1 { color: #b83838 } /* Literal.String.Single */
+.highlight .ss { color: #b83838 } /* Literal.String.Symbol */
+.highlight .bp { color: #388038; font-style: italic } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #b85820 } /* Name.Function.Magic */
+.highlight .vc { color: #b04040 } /* Name.Variable.Class */
+.highlight .vg { color: #908828 } /* Name.Variable.Global */
+.highlight .vi { color: #b04040 } /* Name.Variable.Instance */
+.highlight .vm { color: #b85820 } /* Name.Variable.Magic */
+.highlight .il { color: #444444 } /* Literal.Number.Integer.Long */
+
+</style>
+</head>
+<body>
+<div class="document" id="farfetchd-api-specification">
+<h1 class="title">farfetchd API Specification</h1>
+
+<p>The following specification describes farfetchd API version 0.1.0.</p>
+<p>The client and server both MUST conform to <a class="reference external" href="http://jsonapi.org/">JSON-API</a>.</p>
+<div class="section" id="requesting-a-captcha">
+<h1>Requesting a CAPTCHA</h1>
+<div class="section" id="request">
+<h2>Request</h2>
+<p>To obtain a CAPTCHA, the client MUST send a request for <tt class="docutils literal">GET /fetch</tt>.</p>
+</div>
+<div class="section" id="response">
+<h2>Response</h2>
+<p>The farfetchd server SHOULD respond <tt class="docutils literal">200 OK</tt> and include JSON in the following format:</p>
+<pre class="literal-block">
+{
+  'data': {
+    'id': 1,
+    'type': &quot;fetch&quot;,
+    'version': FARFETCHD_API_VERSION,
+    'image': CAPTCHA,
+    'challenge': CHALLENGE,
+  }
+}
+</pre>
+<p>where:</p>
+<ul class="simple">
+<li><tt class="docutils literal">FARFETCHED_API_VERSION</tt> is the current API version (currently &quot;0.1.0&quot;),</li>
+<li><tt class="docutils literal">CAPTCHA</tt> is a base64-encoded, jpeg image that is 400 pixels in
+length and 125 pixels in height,</li>
+<li><tt class="docutils literal">CHALLENGE</tt> is a base64-encoded CAPTCHA challenge which MUST be
+later passed back to the server along with the proposed solution.</li>
+</ul>
+<p>The challenge contains an encrypted-then-HMACed timestamp, and
+solutions submitted more than 30 minutes after requesting the CAPTCHA
+are considered invalid.</p>
+</div>
+</div>
+<div class="section" id="checking-the-solution-to-a-captcha">
+<h1>Checking the solution to a CAPTCHA</h1>
+<div class="section" id="id1">
+<h2>Request</h2>
+<p>To propose a solution to a CAPTCHA, the client MUST send a request for
+<tt class="docutils literal">POST /check</tt>, where the body of the request contains the following JSON:</p>
+<pre class="literal-block">
+{
+  'data': {
+    'id': 2,
+    'type': &quot;check&quot;,
+    'version': FARFETCHD_API_VERSION,
+    'challenge': CHALLENGE,
+    'solution': SOLUTION,
+  }
+}
+</pre>
+<p>where:</p>
+<ul class="simple">
+<li><tt class="docutils literal">FARFETCHED_API_VERSION</tt> is the current API version (currently &quot;0.1.0&quot;),</li>
+<li><tt class="docutils literal">CHALLENGE</tt> is a base64-encoded CAPTCHA challenge which MUST be
+later passed back to the server along with the proposed solution.</li>
+<li><tt class="docutils literal">SOLUTION</tt> is a valid unicode string, up to 20 bytes in length,
+containing the client's answer (i.e. what characters the CAPTCHA
+image displayed).  The solution is <em>not</em> case-sensitive.</li>
+</ul>
+</div>
+<div class="section" id="id2">
+<h2>Response</h2>
+<p>If the <tt class="docutils literal">CHALLENGE</tt> has already timed out, or if the <tt class="docutils literal">SOLUTION</tt> was
+incorrect, the server SHOULD respond with <tt class="docutils literal">419 No You're A Teapot</tt>.</p>
+<p>If the <tt class="docutils literal">SOLUTION</tt> was successful for the supplied <tt class="docutils literal">CHALLENGE</tt>, the
+server responds <tt class="docutils literal">200 OK</tt> with the following JSON:</p>
+<pre class="literal-block">
+{
+  'data': {
+    'id': 3,
+    'type': &quot;check&quot;,
+    'version': FARFETCHD_API_VERSION,
+    'result': BOOLEAN,
+  }
+}
+</pre>
+<p>where:</p>
+<ul class="simple">
+<li><tt class="docutils literal">FARFETCHED_API_VERSION</tt> is the current API version (currently &quot;0.1.0&quot;),</li>
+<li><tt class="docutils literal">BOOLEAN</tt> is <tt class="docutils literal">&quot;true&quot;</tt> if the <tt class="docutils literal">SOLUTION</tt> was correct.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="other-responses">
+<h1>Other responses</h1>
+<p>If the client requested some page other than <tt class="docutils literal">/</tt>, <tt class="docutils literal">/fetch</tt>, or
+<tt class="docutils literal">/check</tt>, the server MUST respond with <tt class="docutils literal">501 Not Implemented</tt>.</p>
+<p>If the client attempts to request <tt class="docutils literal">POST /</tt> or <tt class="docutils literal">POST /fetch</tt>, the
+server MUST respond <tt class="docutils literal">403 FORBIDDEN</tt>.</p>
+</div>
+</div>
+</body>
+</html>

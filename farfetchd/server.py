@@ -98,17 +98,25 @@ class CaptchaResource(resource.Resource):
         :param data: Some data to respond with.  This will be formatted as JSON.
         :returns: The encoded data.
         """
-        rendered = json.dumps(data)
+        if data:
+            rendered = json.dumps(data)
+        else:
+            rendered = b""
+
         request.responseHeaders.addRawHeader(b"Content-Type", b"application/vnd.api+json")
+
         return rendered
 
-    def render(self, request):
-        log.msg("render GET for root resource")
+    def render_GET(self, request):
         request.responseHeaders.setRawHeaders(b"Content-Type", ["text/html"])
-        return b"""<html><body>
-            <h1>How To Speak To This Server</h1>
-            <p>XXX fill me in with instructions
-            </body></html>"""
+
+        data = bytes()
+        spec = os.path.sep.join([os.path.dirname(__file__), 'API.html'])
+
+        with open(spec) as fh:
+            data += bytes(fh.read())
+
+        return data
 
 
 class CaptchaFetchResource(CaptchaResource):

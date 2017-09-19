@@ -209,10 +209,19 @@ setuptools.setup(
     url='https://www.torproject.org',
     download_url='https://gitweb.torproject.org/farfetchd.git',
     package_dir={'farfetchd': 'farfetchd'},
-    packages=['farfetchd',],
+    packages=[
+        'farfetchd',
+        'farfetchd.test',
+    ],
+    package_data={
+        'farfetchd': [
+            'API.html',
+        ]
+    },
     scripts=['scripts/farfetchd'],
     cmdclass=get_cmdclass(),
     include_package_data=True,
     install_requires=requires,
     dependency_links=deplinks,
+    zip_safe=False,
 )
