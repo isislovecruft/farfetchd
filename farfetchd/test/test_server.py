@@ -78,20 +78,17 @@ class GetClientIPTests(unittest.TestCase):
         self.assertEqual(clientIP, '3.3.3.3')
 
 
-class IndexResourceTests(unittest.TestCase):
-    """Test for :class:`farfetchd.server.IndexResource`."""
+class CaptchaResourceTests(unittest.TestCase):
+    """Test for :class:`farfetchd.server.CaptchaResource`."""
 
     def setUp(self):
-        self.pagename = ''
-        self.indexResource = server.IndexResource()
-        self.root = Resource()
-        self.root.putChild(self.pagename, self.indexResource)
+        self.root = server.CaptchaResource()
 
     def test_IndexResource_render_GET(self):
         """renderGet() should return the index page."""
-        request = DummyRequest([self.pagename])
+        request = DummyRequest(['/'])
         request.method = b'GET'
-        page = self.indexResource.render_GET(request)
+        page = self.root.render_GET(request)
         self.assertSubstring("farfetchd API Specification", page)
 
 

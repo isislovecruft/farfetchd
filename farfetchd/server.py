@@ -113,7 +113,20 @@ class CaptchaResource(resource.Resource):
         request.responseHeaders.setRawHeaders(b"Content-Type", ["text/html"])
 
         data = bytes()
-        spec = os.path.sep.join([os.path.dirname(__file__), 'API.html'])
+        path = []
+
+        path.append(os.path.dirname(__file__))
+
+        # If we're being run from the build/ directory of a source or git tree,
+        # append the full path:
+        if not os.path.isabs(path[0]):
+            path.insert(0, os.getcwd())
+        # If we're being run as part of some unittests, get rid of the test dir:
+        if path[0].endswith("_trial_temp"):
+            path[0] = path[0].rsplit("_trial_temp")[0]
+
+        path.append('API.html')
+        spec = os.path.sep.join(path)
 
         with open(spec) as fh:
             data += bytes(fh.read())

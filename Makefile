@@ -16,9 +16,6 @@ PYTHON_PYPY=PyPy
 
 all: uninstall clean install coverage-test
 
-test:
-	python setup.py test
-
 API.html:
 	pygmentize -S default -f html -a .highlight > style.css
 	rst2html.py --stylesheet style.css doc/API.rst farfetched/API.html
